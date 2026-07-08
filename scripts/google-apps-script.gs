@@ -4,7 +4,7 @@
  * SETUP (one-time, ~5 minutes):
  * 1. Go to https://script.google.com → New project
  * 2. Paste this entire file, save as "Baby Shower RSVP"
- * 3. Run → setupSheet (authorize when prompted)
+ * 3. Run → setupSheet (authorize when prompted; creates "Baby Shower RSVPs" in Drive)
  * 4. Deploy → New deployment → Web app
  *    - Execute as: Me
  *    - Who has access: Anyone
@@ -18,8 +18,23 @@
 const ADMIN_PASSWORD = "babyblue2026";
 const SHEET_NAME = "RSVPs";
 
+function getOrCreateSpreadsheet_() {
+  let ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (ss) return ss;
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty("SPREADSHEET_ID");
+  if (id) {
+    try {
+      return SpreadsheetApp.openById(id);
+    } catch (e) {}
+  }
+  ss = SpreadsheetApp.create("Baby Shower RSVPs");
+  props.setProperty("SPREADSHEET_ID", ss.getId());
+  return ss;
+}
+
 function setupSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getOrCreateSpreadsheet_();
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
@@ -78,7 +93,7 @@ function doGet(e) {
 }
 
 function getSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getOrCreateSpreadsheet_();
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     setupSheet();
