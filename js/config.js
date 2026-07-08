@@ -9,7 +9,7 @@ window.BABY_SHOWER_CONFIG = {
 
   // Google Apps Script Web App URL (deploy scripts/google-apps-script.gs)
   // Leave empty to use FormSubmit email fallback
-  rsvpScriptUrl: "",
+  rsvpScriptUrl: "https://script.google.com/macros/s/AKfycbxxMK43eIw6BkHatha0d4D9cZwUIqCZxwVvBLXxrX9uvC2_jFhwtvpEZeSu5Wjm4WY3/exec",
 
   // FormSubmit fallback — RSVPs emailed to this address
   formSubmitEmail: "andrewjamesmartinez91@gmail.com",
