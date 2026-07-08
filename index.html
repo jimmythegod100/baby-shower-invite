@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baby Shower — A Little Prince is on the Way!</title>
+  <meta name="description" content="You're invited to celebrate Andrew & Lizzie's baby boy! September 20, 2026 at 1 PM.">
+  <meta property="og:title" content="Baby Boy Shower Invitation">
+  <meta property="og:description" content="Join us September 20, 2026 at Andrew & Lizzie's house!">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="sky">
+    <div class="cloud cloud-1"></div>
+    <div class="cloud cloud-2"></div>
+    <div class="cloud cloud-3"></div>
+    <div class="stars" aria-hidden="true"></div>
+  </div>
+
+  <main class="invite-card">
+    <header class="invite-header">
+      <div class="badge">It's a Boy!</div>
+      <h1>A Little Prince<br><span>is on the way</span></h1>
+      <p class="subtitle">Andrew &amp; Lizzie invite you to celebrate</p>
+    </header>
+
+    <section class="details">
+      <div class="detail-row">
+        <span class="icon" aria-hidden="true">📅</span>
+        <div>
+          <h2>When</h2>
+          <p>Saturday, September 20, 2026</p>
+          <p class="time">1:00 PM</p>
+        </div>
+      </div>
+      <div class="detail-row">
+        <span class="icon" aria-hidden="true">🏡</span>
+        <div>
+          <h2>Where</h2>
+          <p>Andrew &amp; Lizzie's House</p>
+          <p class="hint">Address details will be shared upon RSVP</p>
+        </div>
+      </div>
+    </section>
+
+    <p class="message">
+      Join us for an afternoon of love, laughter, and tiny socks.
+      We can't wait to celebrate this sweet little boy with you!
+    </p>
+
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="rsvp-open">RSVP</button>
+      <a class="btn btn-secondary" href="https://www.amazon.com/baby-reg/andrew-martinez-november-2026/11EL4A7RSIA80?ref_=cm_sw_r_cp_ud_dp_7GG9SWDT1XPG0JNMPTVK" target="_blank" rel="noopener noreferrer">
+        View Baby Registry
+      </a>
+    </div>
+
+    <footer class="invite-footer">
+      <span class="footprints" aria-hidden="true">👣 👣 👣</span>
+      <p>With love, Andrew &amp; Lizzie</p>
+    </footer>
+  </main>
+
+  <!-- RSVP Modal -->
+  <div class="modal-overlay" id="rsvp-modal" hidden>
+    <div class="modal" role="dialog" aria-labelledby="rsvp-title" aria-modal="true">
+      <button type="button" class="modal-close" id="rsvp-close" aria-label="Close">&times;</button>
+      <h2 id="rsvp-title">RSVP</h2>
+      <p class="modal-sub">Let us know if you can make it!</p>
+
+      <form id="rsvp-form">
+        <label>
+          Your Name
+          <input type="text" name="name" required placeholder="First & Last name" autocomplete="name">
+        </label>
+
+        <label>
+          Email <span class="optional">(optional)</span>
+          <input type="email" name="email" placeholder="your@email.com" autocomplete="email">
+        </label>
+
+        <fieldset>
+          <legend>Will you be attending?</legend>
+          <label class="radio-card">
+            <input type="radio" name="attending" value="yes" required>
+            <span>🎉 Yes, I'll be there!</span>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="attending" value="no">
+            <span>💙 Sorry, can't make it</span>
+          </label>
+        </fieldset>
+
+        <label id="guests-label">
+          Number of guests (including you)
+          <input type="number" name="guests" min="1" max="10" value="1">
+        </label>
+
+        <label>
+          Message <span class="optional">(optional)</span>
+          <textarea name="message" rows="3" placeholder="Any dietary needs or a sweet note?"></textarea>
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-full" id="rsvp-submit">Send RSVP</button>
+        <p class="form-status" id="form-status" hidden></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/rsvp.js"></script>
+</body>
+</html>

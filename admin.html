@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RSVP Admin — Baby Shower</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue-300: #89cff0;
+      --blue-600: #2a7fb0;
+      --text: #2c4a62;
+      --bg: #eef7ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Nunito", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem 1rem;
+    }
+    .wrap { max-width: 900px; margin: 0 auto; }
+    h1 { color: var(--blue-600); margin-bottom: 0.25rem; }
+    .sub { color: #5a7a94; margin-bottom: 2rem; }
+    .login, .stats, table {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 8px 30px rgba(42,127,176,0.12);
+      margin-bottom: 1.5rem;
+    }
+    input, button {
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 0.7rem 1rem;
+      border-radius: 10px;
+      border: 2px solid #d4ecff;
+    }
+    button {
+      background: var(--blue-600);
+      color: white;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+    }
+    .stat-card {
+      text-align: center;
+      padding: 1rem;
+      background: #eef7ff;
+      border-radius: 12px;
+    }
+    .stat-card .num { font-size: 2rem; font-weight: 800; color: var(--blue-600); }
+    .stat-card .lbl { font-size: 0.85rem; color: #5a7a94; }
+    table { width: 100%; border-collapse: collapse; overflow-x: auto; display: block; }
+    th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid #d4ecff; }
+    th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--blue-600); }
+    .badge-yes { background: #d4f5e2; color: #1a7a42; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; }
+    .badge-no { background: #fdecea; color: #b42318; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; }
+    .error { color: #b42318; }
+    .hint { font-size: 0.85rem; color: #5a7a94; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>RSVP Dashboard</h1>
+    <p class="sub">Andrew &amp; Lizzie's Baby Shower — private view</p>
+
+    <div class="login" id="login-panel">
+      <p>Enter admin password to view RSVPs:</p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <input type="password" id="password" placeholder="Password" style="flex:1;min-width:200px;">
+        <button type="button" id="login-btn">View RSVPs</button>
+      </div>
+      <p class="error" id="login-error" hidden></p>
+      <p class="hint">Password is set in <code>js/config.js</code> and <code>scripts/google-apps-script.gs</code>. Deploy the Apps Script for live RSVP tracking.</p>
+    </div>
+
+    <div id="dashboard" hidden>
+      <div class="stats" id="stats"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Guests</th>
+            <th>Email</th>
+            <th>Message</th>
+            <th>When</th>
+          </tr>
+        </thead>
+        <tbody id="rsvp-body"></tbody>
+      </table>
+      <button type="button" id="refresh-btn" style="margin-top:1rem;">Refresh</button>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script>
+    const config = window.BABY_SHOWER_CONFIG || {};
+    const loginPanel = document.getElementById("login-panel");
+    const dashboard = document.getElementById("dashboard");
+    const loginError = document.getElementById("login-error");
+    let storedPassword = "";
+
+    async function fetchRsvps(password) {
+      const url = config.rsvpScriptUrl;
+      if (!url) {
+        throw new Error("RSVP script not configured. Deploy Google Apps Script and set rsvpScriptUrl in js/config.js.");
+      }
+      const res = await fetch(`${url}?action=list&password=${encodeURIComponent(password)}`);
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "Access denied");
+      return json.rsvps || [];
+    }
+
+    function render(rsvps) {
+      const attending = rsvps.filter((r) => r.attending === "yes");
+      const notAttending = rsvps.filter((r) => r.attending === "no");
+      const totalGuests = attending.reduce((sum, r) => sum + (Number(r.guests) || 1), 0);
+
+      document.getElementById("stats").innerHTML = `
+        <div class="stat-card"><div class="num">${rsvps.length}</div><div class="lbl">Total Responses</div></div>
+        <div class="stat-card"><div class="num">${attending.length}</div><div class="lbl">Attending</div></div>
+        <div class="stat-card"><div class="num">${notAttending.length}</div><div class="lbl">Not Attending</div></div>
+        <div class="stat-card"><div class="num">${totalGuests}</div><div class="lbl">Total Guests</div></div>
+      `;
+
+      const tbody = document.getElementById("rsvp-body");
+      tbody.innerHTML = rsvps.length
+        ? rsvps.map((r) => `
+          <tr>
+            <td>${escapeHtml(r.name)}</td>
+            <td><span class="badge-${r.attending}">${r.attending === "yes" ? "Coming" : "Not Coming"}</span></td>
+            <td>${r.attending === "yes" ? (r.guests || 1) : "—"}</td>
+            <td>${escapeHtml(r.email || "—")}</td>
+            <td>${escapeHtml(r.message || "—")}</td>
+            <td>${formatDate(r.timestamp)}</td>
+          </tr>
+        `).join("")
+        : '<tr><td colspan="6">No RSVPs yet.</td></tr>';
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement("div");
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function formatDate(ts) {
+      if (!ts) return "—";
+      try {
+        return new Date(ts).toLocaleString();
+      } catch {
+        return ts;
+      }
+    }
+
+    async function load() {
+      try {
+        const rsvps = await fetchRsvps(storedPassword);
+        render(rsvps);
+        loginPanel.hidden = true;
+        dashboard.hidden = false;
+        loginError.hidden = true;
+      } catch (err) {
+        loginError.textContent = err.message;
+        loginError.hidden = false;
+      }
+    }
+
+    document.getElementById("login-btn").addEventListener("click", () => {
+      storedPassword = document.getElementById("password").value;
+      if (!storedPassword) {
+        loginError.textContent = "Please enter the password.";
+        loginError.hidden = false;
+        return;
+      }
+      load();
+    });
+
+    document.getElementById("refresh-btn")?.addEventListener("click", load);
+  </script>
+</body>
+</html>
