@@ -6,7 +6,7 @@ A cute baby-blue invitation site for Andrew & Lizzie's baby shower.
 
 ## Event Details
 
-- **Date:** Saturday, September 20, 2026
+- **Date:** Sunday, September 20, 2026
 - **Time:** 1:00 PM
 - **Location:** Andrew & Lizzie's House
 - **Registry:** [Amazon Baby Registry](https://www.amazon.com/baby-reg/andrew-martinez-november-2026/11EL4A7RSIA80)
