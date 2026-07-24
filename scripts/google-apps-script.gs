@@ -11,11 +11,13 @@
  * 5. Copy the Web App URL into js/config.js → rsvpScriptUrl
  * 6. Commit & push to GitHub
  *
+ * After editing this file later: Deploy → Manage deployments → Edit (pencil) →
+ * New version → Deploy. The admin page lists RSVPs with no password.
+ *
  * RSVPs are stored in a Google Sheet linked to this script.
  * View the sheet directly or use admin.html on the site.
  */
 
-const ADMIN_PASSWORD = "babyblue2026";
 const SHEET_NAME = "RSVPs";
 
 function getOrCreateSpreadsheet_() {
@@ -47,7 +49,8 @@ function setupSheet() {
 
 function doPost(e) {
   try {
-    const data = JSON.parse(e.postData.contents);
+    const raw = (e && e.postData && e.postData.contents) || "{}";
+    const data = JSON.parse(raw);
     const sheet = getSheet_();
 
     sheet.appendRow([
@@ -66,17 +69,14 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  const params = e.parameter || {};
+  const params = (e && e.parameter) || {};
   if (params.action !== "list") {
     return jsonResponse_({ ok: false, error: "Invalid action" });
-  }
-  if (params.password !== ADMIN_PASSWORD) {
-    return jsonResponse_({ ok: false, error: "Invalid password" });
   }
 
   const sheet = getSheet_();
   const rows = sheet.getDataRange().getValues();
-  const headers = rows.shift();
+  rows.shift();
   const rsvps = rows
     .filter((row) => row[1])
     .map((row) => ({

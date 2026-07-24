@@ -8,12 +8,12 @@ window.BABY_SHOWER_CONFIG = {
     "https://www.amazon.com/baby-reg/andrew-martinez-november-2026/11EL4A7RSIA80?ref_=cm_sw_r_cp_ud_dp_7GG9SWDT1XPG0JNMPTVK",
 
   // Google Apps Script Web App URL (deploy scripts/google-apps-script.gs)
-  // Leave empty to use FormSubmit email fallback
+  // Leave empty to use FormSubmit email fallback only
   rsvpScriptUrl: "https://script.google.com/macros/s/AKfycbxxMK43eIw6BkHatha0d4D9cZwUIqCZxwVvBLXxrX9uvC2_jFhwtvpEZeSu5Wjm4WY3/exec",
 
   // FormSubmit fallback — RSVPs emailed to this address
   formSubmitEmail: "andrewjamesmartinez91@gmail.com",
 
-  // Admin page password (must match ADMIN_PASSWORD in Apps Script)
-  adminPassword: "babyblue2026",
+  // Guest contact fallbacks if both RSVP backends fail
+  contactPhone: "+12093155702",
 };

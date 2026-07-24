@@ -26,21 +26,18 @@
     .wrap { max-width: 900px; margin: 0 auto; }
     h1 { color: var(--blue-600); margin-bottom: 0.25rem; }
     .sub { color: #5a7a94; margin-bottom: 2rem; }
-    .login, .stats, table {
+    .stats, table, .status-box {
       background: white;
       border-radius: 16px;
       padding: 1.5rem;
       box-shadow: 0 8px 30px rgba(42,127,176,0.12);
       margin-bottom: 1.5rem;
     }
-    input, button {
+    button {
       font-family: inherit;
       font-size: 1rem;
       padding: 0.7rem 1rem;
       border-radius: 10px;
-      border: 2px solid #d4ecff;
-    }
-    button {
       background: var(--blue-600);
       color: white;
       border: none;
@@ -66,22 +63,23 @@
     .badge-yes { background: #d4f5e2; color: #1a7a42; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; }
     .badge-no { background: #fdecea; color: #b42318; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; }
     .error { color: #b42318; }
-    .hint { font-size: 0.85rem; color: #5a7a94; margin-top: 1rem; }
+    .hint { font-size: 0.85rem; color: #5a7a94; margin-top: 0.75rem; line-height: 1.45; }
+    .loading { color: #5a7a94; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>RSVP Dashboard</h1>
-    <p class="sub">Andrew &amp; Lizzie's Baby Shower — private view</p>
+    <p class="sub">Andrew &amp; Lizzie's Baby Shower — RSVP responses</p>
 
-    <div class="login" id="login-panel">
-      <p>Enter admin password to view RSVPs:</p>
-      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-        <input type="password" id="password" placeholder="Password" style="flex:1;min-width:200px;">
-        <button type="button" id="login-btn">View RSVPs</button>
-      </div>
-      <p class="error" id="login-error" hidden></p>
-      <p class="hint">Password is set in <code>js/config.js</code> and <code>scripts/google-apps-script.gs</code>. Deploy the Apps Script for live RSVP tracking.</p>
+    <div class="status-box" id="status-box">
+      <p class="loading" id="status-msg">Loading RSVPs…</p>
+      <p class="error" id="load-error" hidden></p>
+      <p class="hint" id="redeploy-hint" hidden>
+        If you still see a password error, re-paste <code>scripts/google-apps-script.gs</code> into
+        <a href="https://script.google.com" target="_blank" rel="noopener noreferrer">Google Apps Script</a>
+        and create a new Web App deployment (password checks were removed). Until then, open the linked Google Sheet from that project.
+      </p>
     </div>
 
     <div id="dashboard" hidden>
@@ -106,19 +104,20 @@
   <script src="js/config.js"></script>
   <script>
     const config = window.BABY_SHOWER_CONFIG || {};
-    const loginPanel = document.getElementById("login-panel");
+    const statusBox = document.getElementById("status-box");
+    const statusMsg = document.getElementById("status-msg");
+    const loadError = document.getElementById("load-error");
+    const redeployHint = document.getElementById("redeploy-hint");
     const dashboard = document.getElementById("dashboard");
-    const loginError = document.getElementById("login-error");
-    let storedPassword = "";
 
-    async function fetchRsvps(password) {
+    async function fetchRsvps() {
       const url = config.rsvpScriptUrl;
       if (!url) {
         throw new Error("RSVP script not configured. Deploy Google Apps Script and set rsvpScriptUrl in js/config.js.");
       }
-      const res = await fetch(`${url}?action=list&password=${encodeURIComponent(password)}`);
+      const res = await fetch(`${url}?action=list`);
       const json = await res.json();
-      if (!json.ok) throw new Error(json.error || "Access denied");
+      if (!json.ok) throw new Error(json.error || "Could not load RSVPs");
       return json.rsvps || [];
     }
 
@@ -165,29 +164,29 @@
     }
 
     async function load() {
+      statusMsg.hidden = false;
+      statusMsg.textContent = "Loading RSVPs…";
+      loadError.hidden = true;
+      redeployHint.hidden = true;
+
       try {
-        const rsvps = await fetchRsvps(storedPassword);
+        const rsvps = await fetchRsvps();
         render(rsvps);
-        loginPanel.hidden = true;
+        statusBox.hidden = true;
         dashboard.hidden = false;
-        loginError.hidden = true;
       } catch (err) {
-        loginError.textContent = err.message;
-        loginError.hidden = false;
+        dashboard.hidden = true;
+        statusBox.hidden = false;
+        statusMsg.hidden = true;
+        loadError.textContent = err.message;
+        loadError.hidden = false;
+        const needsRedeploy = /password|access denied/i.test(String(err.message || ""));
+        redeployHint.hidden = !needsRedeploy;
       }
     }
 
-    document.getElementById("login-btn").addEventListener("click", () => {
-      storedPassword = document.getElementById("password").value;
-      if (!storedPassword) {
-        loginError.textContent = "Please enter the password.";
-        loginError.hidden = false;
-        return;
-      }
-      load();
-    });
-
     document.getElementById("refresh-btn")?.addEventListener("click", load);
+    load();
   </script>
 </body>
 </html>

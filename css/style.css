@@ -229,6 +229,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 0.9rem 1.5rem;
+  min-height: 48px;
   border-radius: 999px;
   font-family: inherit;
   font-size: 1rem;
@@ -236,7 +237,16 @@ body {
   text-decoration: none;
   cursor: pointer;
   border: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  position: relative;
+  z-index: 2;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn:focus-visible {
+  outline: 3px solid var(--blue-300);
+  outline-offset: 3px;
 }
 
 .btn:hover {
@@ -425,6 +435,12 @@ body {
 .form-status.error {
   background: #fdecea;
   color: #b42318;
+}
+
+.form-status a {
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
 }
 
 @media (min-width: 480px) {

@@ -7,6 +7,8 @@
   const statusEl = document.getElementById("form-status");
   const guestsLabel = document.getElementById("guests-label");
   const submitBtn = document.getElementById("rsvp-submit");
+  const contactPhone = config.contactPhone || "+12093155702";
+  const contactEmail = config.formSubmitEmail || "andrewjamesmartinez91@gmail.com";
 
   function openModal() {
     modal.hidden = false;
@@ -25,13 +27,15 @@
     if (e.target === modal) closeModal();
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !modal.hidden) closeModal();
+    if (e.key === "Escape" && modal && !modal.hidden) closeModal();
   });
 
   form?.querySelectorAll('input[name="attending"]').forEach((radio) => {
     radio.addEventListener("change", () => {
       const attending = form.querySelector('input[name="attending"]:checked')?.value;
-      guestsLabel.style.display = attending === "yes" ? "block" : "none";
+      if (guestsLabel) {
+        guestsLabel.style.display = attending === "yes" ? "block" : "none";
+      }
     });
   });
 
@@ -41,24 +45,53 @@
     statusEl.hidden = false;
   }
 
-  async function submitToAppsScript(data) {
-    const url = config.rsvpScriptUrl;
-    if (!url) return false;
-
-    const res = await fetch(url, {
-      method: "POST",
-      mode: "cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(data),
-    });
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error || "RSVP failed");
-    return true;
+  function showStatusHtml(html, type) {
+    statusEl.innerHTML = html;
+    statusEl.className = "form-status " + type;
+    statusEl.hidden = false;
   }
 
-  async function submitToFormSubmit(data) {
+  /** Apps Script web apps often 302 → opaque CORS; fire-and-forget still delivers the POST. */
+  function submitToAppsScript(data) {
+    const url = config.rsvpScriptUrl;
+    if (!url) return Promise.resolve({ ok: false, reason: "missing-url" });
+
+    // Prefer readable CORS response when available (text/plain avoids preflight issues).
+    return fetch(url, {
+      method: "POST",
+      mode: "cors",
+      redirect: "follow",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(data),
+    })
+      .then(async (res) => {
+        try {
+          const json = await res.json();
+          if (json && json.ok) return { ok: true, path: "apps-script-cors" };
+        } catch (_) {
+          /* opaque / non-JSON after redirect — treat as delivered if status ok-ish */
+        }
+        if (res.ok || res.type === "opaqueredirect" || res.status === 0) {
+          return { ok: true, path: "apps-script-opaque" };
+        }
+        return { ok: false, reason: "http-" + res.status };
+      })
+      .catch(() => {
+        // Last resort: no-cors POST (response unreadable, but request usually reaches doPost).
+        return fetch(url, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(data),
+        })
+          .then(() => ({ ok: true, path: "apps-script-no-cors" }))
+          .catch((err) => ({ ok: false, reason: String(err) }));
+      });
+  }
+
+  function submitToFormSubmit(data) {
     const email = config.formSubmitEmail;
-    if (!email) return false;
+    if (!email) return Promise.resolve({ ok: false, reason: "missing-email" });
 
     const attendingLabel = data.attending === "yes" ? "Attending" : "Not Attending";
     const body = new FormData();
@@ -70,14 +103,47 @@
     body.append("Guests", data.attending === "yes" ? String(data.guests) : "0");
     body.append("Message", data.message || "(none)");
     body.append("_captcha", "false");
+    body.append("_honey", "");
 
-    const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(email)}`, {
+    return fetch(`https://formsubmit.co/ajax/${encodeURIComponent(email)}`, {
       method: "POST",
       body,
-    });
-    const json = await res.json();
-    if (!json.success) throw new Error("Could not send RSVP");
-    return true;
+      headers: { Accept: "application/json" },
+    })
+      .then(async (res) => {
+        let json = null;
+        try {
+          json = await res.json();
+        } catch (_) {}
+        if (res.ok && (json?.success || json?.ok || !json)) {
+          return { ok: true, path: "formsubmit" };
+        }
+        return { ok: false, reason: json?.message || "formsubmit-failed" };
+      })
+      .catch((err) => ({ ok: false, reason: String(err) }));
+  }
+
+  function mailtoFallback(data) {
+    const attendingLabel = data.attending === "yes" ? "Attending" : "Not Attending";
+    const lines = [
+      `Name: ${data.name}`,
+      `Email: ${data.email || "(not provided)"}`,
+      `Attending: ${attendingLabel}`,
+      `Guests: ${data.attending === "yes" ? data.guests : 0}`,
+      `Message: ${data.message || "(none)"}`,
+    ];
+    const subject = encodeURIComponent(`Baby Shower RSVP: ${data.name} — ${attendingLabel}`);
+    const body = encodeURIComponent(lines.join("\n"));
+    return `mailto:${encodeURIComponent(contactEmail)}?subject=${subject}&body=${body}`;
+  }
+
+  function smsFallback(data) {
+    const attendingLabel = data.attending === "yes" ? "yes" : "no";
+    const text = encodeURIComponent(
+      `Baby Shower RSVP — ${data.name}: ${attendingLabel}, guests ${data.attending === "yes" ? data.guests : 0}`
+    );
+    const digits = String(contactPhone).replace(/[^\d+]/g, "");
+    return `sms:${digits}?&body=${text}`;
   }
 
   form?.addEventListener("submit", async (e) => {
@@ -85,6 +151,7 @@
     submitBtn.disabled = true;
     submitBtn.textContent = "Sending…";
     statusEl.hidden = true;
+    statusEl.textContent = "";
 
     const fd = new FormData(form);
     const attending = fd.get("attending");
@@ -97,25 +164,56 @@
       timestamp: new Date().toISOString(),
     };
 
+    if (!data.name || !attending) {
+      showStatus("Please enter your name and whether you can attend.", "error");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Send RSVP";
+      return;
+    }
+
     try {
-      let sent = false;
-      if (config.rsvpScriptUrl) {
-        sent = await submitToAppsScript(data);
-      }
-      if (!sent) {
-        await submitToFormSubmit(data);
+      // Dual-path: try Apps Script and FormSubmit in parallel so one success is enough.
+      const tasks = [];
+      if (config.rsvpScriptUrl) tasks.push(submitToAppsScript(data));
+      if (config.formSubmitEmail) tasks.push(submitToFormSubmit(data));
+
+      let results = [];
+      if (tasks.length) {
+        results = await Promise.all(tasks);
       }
 
-      const msg =
-        attending === "yes"
-          ? "Thank you! We can't wait to see you! 💙"
-          : "Thank you for letting us know. We'll miss you! 💙";
-      showStatus(msg, "success");
-      form.reset();
-      setTimeout(closeModal, 2500);
+      const anyOk = results.some((r) => r && r.ok);
+
+      if (anyOk || (!config.rsvpScriptUrl && !config.formSubmitEmail)) {
+        // If neither backend configured, still show contact fallback below.
+        if (anyOk) {
+          const msg =
+            attending === "yes"
+              ? "Thank you! We can't wait to see you! 💙"
+              : "Thank you for letting us know. We'll miss you! 💙";
+          showStatus(msg, "success");
+          form.reset();
+          if (guestsLabel) guestsLabel.style.display = "block";
+          setTimeout(closeModal, 2500);
+          return;
+        }
+      }
+
+      // Both paths failed (or none configured) — keep guest unstuck with mailto/SMS.
+      showStatusHtml(
+        `We couldn't confirm automatically. Please ` +
+          `<a href="${mailtoFallback(data)}">email your RSVP</a> or ` +
+          `<a href="${smsFallback(data)}">text us</a> — thank you!`,
+        "error"
+      );
     } catch (err) {
-      showStatus("Something went wrong. Please try again or text Andrew & Lizzie.", "error");
       console.error(err);
+      showStatusHtml(
+        `Something went wrong. Please ` +
+          `<a href="${mailtoFallback(data)}">email your RSVP</a> or ` +
+          `<a href="${smsFallback(data)}">text Andrew &amp; Lizzie</a>.`,
+        "error"
+      );
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = "Send RSVP";

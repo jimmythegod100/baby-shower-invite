@@ -13,29 +13,36 @@ A cute baby-blue invitation site for Andrew & Lizzie's baby shower.
 
 ## RSVP Tracking
 
-RSVPs work two ways:
+RSVPs use a dual path so guests are rarely stuck:
 
-1. **FormSubmit (active now)** — Each RSVP emails `andrewjamesmartinez91@gmail.com` with name, attending status, and guest count.
-2. **Google Apps Script + Admin Dashboard (recommended)** — Deploy `scripts/google-apps-script.gs` for a live spreadsheet and admin page.
+1. **Google Apps Script** — writes to a Google Sheet (when `rsvpScriptUrl` is set).
+2. **FormSubmit** — emails `andrewjamesmartinez91@gmail.com` in parallel.
+3. If both fail, the form shows **email** and **SMS** fallback links.
 
-### Enable the admin dashboard
+### Admin dashboard (no password)
 
-1. Open [Google Apps Script](https://script.google.com) → New project
-2. Paste contents of `scripts/google-apps-script.gs`
-3. Run **setupSheet** once (authorize when prompted)
-4. **Deploy** → New deployment → Web app → "Anyone" access
-5. Copy the Web App URL into `js/config.js` → `rsvpScriptUrl`
+View RSVPs at: https://jimmythegod100.github.io/baby-shower-invite/admin.html
+
+No login — the page loads the sheet list via Apps Script `?action=list`.
+
+### Deploy / update Google Apps Script
+
+1. Open [Google Apps Script](https://script.google.com) → open the Baby Shower RSVP project (or New project)
+2. Paste contents of `scripts/google-apps-script.gs` (password checks removed)
+3. Run **setupSheet** once if this is a new project (authorize when prompted)
+4. **Deploy** → New deployment (or Manage deployments → Edit → New version) → Web app → "Anyone" access
+5. Copy the Web App URL into `js/config.js` → `rsvpScriptUrl` if it changed
 6. Push to GitHub
 
-View RSVPs at: `https://jimmythegod100.github.io/baby-shower-invite/admin.html`  
-Default password: `babyblue2026` (change in both `js/config.js` and the Apps Script)
+**Important:** GitHub Pages updates from this repo automatically, but the Apps Script backend on Google does **not**. If `admin.html` still shows an "Invalid password" error, re-paste `scripts/google-apps-script.gs` and redeploy the web app once.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
 | `index.html` | Main invitation |
-| `admin.html` | RSVP dashboard (password protected) |
+| `admin.html` | RSVP dashboard (open — no password) |
 | `js/config.js` | Site settings |
-| `js/rsvp.js` | RSVP form logic |
+| `js/rsvp.js` | RSVP form logic (dual-path submit) |
 | `css/style.css` | Baby blue styling |
+| `scripts/google-apps-script.gs` | Sheet backend (redeploy after changes) |
