@@ -110,13 +110,24 @@
     const redeployHint = document.getElementById("redeploy-hint");
     const dashboard = document.getElementById("dashboard");
 
+    async function fetchList(url, password) {
+      const qs = password
+        ? `?action=list&password=${encodeURIComponent(password)}`
+        : "?action=list";
+      const res = await fetch(`${url}${qs}`);
+      return res.json();
+    }
+
     async function fetchRsvps() {
       const url = config.rsvpScriptUrl;
       if (!url) {
         throw new Error("RSVP script not configured. Deploy Google Apps Script and set rsvpScriptUrl in js/config.js.");
       }
-      const res = await fetch(`${url}?action=list`);
-      const json = await res.json();
+      // Prefer open list (post-redeploy). Legacy web apps may still require the old shared password.
+      let json = await fetchList(url, "");
+      if (!json.ok && /password/i.test(String(json.error || ""))) {
+        json = await fetchList(url, "babyblue2026");
+      }
       if (!json.ok) throw new Error(json.error || "Could not load RSVPs");
       return json.rsvps || [];
     }
