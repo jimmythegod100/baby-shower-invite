@@ -13,7 +13,4 @@ window.BABY_SHOWER_CONFIG = {
 
   // FormSubmit fallback — RSVPs emailed to this address
   formSubmitEmail: "andrewjamesmartinez91@gmail.com",
-
-  // Guest contact fallbacks if both RSVP backends fail
-  contactPhone: "+12093155702",
 };

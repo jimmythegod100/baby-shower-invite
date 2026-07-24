@@ -7,7 +7,6 @@
   const statusEl = document.getElementById("form-status");
   const guestsLabel = document.getElementById("guests-label");
   const submitBtn = document.getElementById("rsvp-submit");
-  const contactPhone = config.contactPhone || "+12093155702";
   const contactEmail = config.formSubmitEmail || "andrewjamesmartinez91@gmail.com";
 
   function openModal() {
@@ -137,15 +136,6 @@
     return `mailto:${encodeURIComponent(contactEmail)}?subject=${subject}&body=${body}`;
   }
 
-  function smsFallback(data) {
-    const attendingLabel = data.attending === "yes" ? "yes" : "no";
-    const text = encodeURIComponent(
-      `Baby Shower RSVP — ${data.name}: ${attendingLabel}, guests ${data.attending === "yes" ? data.guests : 0}`
-    );
-    const digits = String(contactPhone).replace(/[^\d+]/g, "");
-    return `sms:${digits}?&body=${text}`;
-  }
-
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     submitBtn.disabled = true;
@@ -199,19 +189,17 @@
         }
       }
 
-      // Both paths failed (or none configured) — keep guest unstuck with mailto/SMS.
+      // Both paths failed (or none configured) — keep guest unstuck with mailto.
       showStatusHtml(
         `We couldn't confirm automatically. Please ` +
-          `<a href="${mailtoFallback(data)}">email your RSVP</a> or ` +
-          `<a href="${smsFallback(data)}">text us</a> — thank you!`,
+          `<a href="${mailtoFallback(data)}">email your RSVP</a> — thank you!`,
         "error"
       );
     } catch (err) {
       console.error(err);
       showStatusHtml(
         `Something went wrong. Please ` +
-          `<a href="${mailtoFallback(data)}">email your RSVP</a> or ` +
-          `<a href="${smsFallback(data)}">text Andrew &amp; Lizzie</a>.`,
+          `<a href="${mailtoFallback(data)}">email your RSVP</a> to Andrew &amp; Lizzie.`,
         "error"
       );
     } finally {

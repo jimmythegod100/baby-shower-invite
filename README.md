@@ -17,7 +17,7 @@ RSVPs use a dual path so guests are rarely stuck:
 
 1. **Google Apps Script** — writes to a Google Sheet (when `rsvpScriptUrl` is set).
 2. **FormSubmit** — emails `andrewjamesmartinez91@gmail.com` in parallel.
-3. If both fail, the form shows **email** and **SMS** fallback links.
+3. If both fail, the form shows an **email** fallback link.
 
 ### Admin dashboard (no password)
 
